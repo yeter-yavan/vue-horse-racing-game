@@ -65,4 +65,8 @@ src/
 
 ## License
 
-MIT
+# MIT
+
+# vue-horse-racing-game
+
+Horse racing game
