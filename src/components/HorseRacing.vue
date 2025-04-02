@@ -14,7 +14,7 @@
                         ? 'bg-red-500 hover:bg-red-700 text-white'
                         : 'bg-green-500 hover:bg-green-700 text-white'
                 ]">
-                    {{ isRacing ? 'Pause' : 'Start' }}
+                    {{ isRacing ? 'Stop' : 'Start' }}
                 </button>
             </div>
         </div>
@@ -59,18 +59,22 @@ const currentRound = computed(() => store.currentRound)
 
 // Generate new program
 const generateProgram = () => {
+    // Reset everything
     store.stopRace()
+    roundResults.value = []
     store.generateRaceSchedule()
-    roundResults.value = Array(rounds.value.length).fill([])
 }
 
 // Toggle race state
 const toggleRace = () => {
     if (!isRacing.value) {
+        // Start the race
         store.startRace()
         isRacing.value = true
+        roundResults.value = Array(rounds.value.length).fill([])
         runRace()
     } else {
+        // Stop the race
         store.stopRace()
         isRacing.value = false
         if (animationFrameId) {
@@ -85,12 +89,27 @@ onMounted(() => {
     store.generateHorses()
 })
 
+// In the main component (Main.vue)
 const recordResults = () => {
+    // Get all horses that have finished the race
     const finishedHorses = selectedHorses.value
         .filter(horse => horse.position >= 100)
-        .sort((a, b) => b.position - a.position)
+        .sort((a, b) => {
+            // First sort by position (lower position means they finished earlier)
+            const positionDiff = Math.abs(a.position - 100) - Math.abs(b.position - 100);
+            if (Math.abs(positionDiff) > 0.001) { // Use small threshold for floating point comparison
+                return positionDiff;
+            }
 
-    roundResults.value[currentRound.value] = finishedHorses
+            // If positions are effectively equal, use speed and condition as tiebreakers
+            if (Math.abs(b.speed - a.speed) > 0.001) {
+                return b.speed - a.speed; // Faster horse wins
+            }
+
+            return b.condition - a.condition; // Better condition horse wins if all else is equal
+        });
+
+    roundResults.value[currentRound.value] = finishedHorses;
 }
 
 // Run the race animation

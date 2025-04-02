@@ -53,7 +53,7 @@ interface HorseState {
   rounds: number[]
   currentRound: number
   isRacing: boolean
-  raceSchedule: Horse[][] // Her round için at listesi
+  raceSchedule: Horse[][]
 }
 
 export const useHorseStore = defineStore('horse', {
@@ -68,11 +68,11 @@ export const useHorseStore = defineStore('horse', {
 
   actions: {
     generateHorses() {
-      // Her at için sabit renk ve isim ataması
-      this.horses = Array.from({ length: 20 }, (_, index) => ({
+      // Generate exactly 20 horses with unique names and colors
+      this.horses = horseNames.map((name, index) => ({
         id: index + 1,
-        name: horseNames[index],
-        condition: Math.floor(Math.random() * 100) + 1,
+        name: name,
+        condition: Math.floor(Math.random() * 100) + 1, // 1-100 condition
         color: horseColors[index],
         position: 0,
         speed: 0,
@@ -80,18 +80,23 @@ export const useHorseStore = defineStore('horse', {
     },
 
     generateRaceSchedule() {
+      // Reset race schedule
       this.raceSchedule = []
       const availableHorses = [...this.horses]
 
-      // 6 round için program oluştur
+      // Create schedule for 6 rounds
       for (let round = 0; round < 6; round++) {
         const roundHorses: Horse[] = []
         const tempHorses = [...availableHorses]
 
-        // Her round için 10 random at seç
+        // Select 10 unique random horses for each round
         for (let i = 0; i < 10; i++) {
           const randomIndex = Math.floor(Math.random() * tempHorses.length)
-          roundHorses.push({ ...tempHorses[randomIndex] })
+          roundHorses.push({
+            ...tempHorses[randomIndex],
+            position: 0, // Reset position for each round
+            speed: 0, // Reset speed for each round
+          })
           tempHorses.splice(randomIndex, 1)
         }
 
@@ -100,22 +105,31 @@ export const useHorseStore = defineStore('horse', {
     },
 
     selectHorsesForRound() {
-      this.selectedHorses = this.raceSchedule[this.currentRound]?.map((horse) => ({
-        ...horse,
-        position: 0,
-        speed: 0,
-      }))
+      // Ensure horses are selected and reset for the current round
+      this.selectedHorses =
+        this.raceSchedule[this.currentRound]?.map((horse) => ({
+          ...horse,
+          position: 0,
+          speed: 0,
+        })) || []
     },
 
     startRace() {
+      // Ensure race schedule is generated before starting
+      if (this.raceSchedule.length === 0) {
+        this.generateRaceSchedule()
+      }
       this.isRacing = true
       this.currentRound = 0
       this.selectHorsesForRound()
     },
 
     stopRace() {
+      // Completely reset the race state
       this.isRacing = false
       this.currentRound = 0
+      this.selectedHorses = []
+      this.raceSchedule = []
     },
 
     nextRound() {
